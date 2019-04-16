@@ -1,0 +1,22 @@
+{
+  "name": "vc-gif",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "parcel src/index.html"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "parcel": "^1.12.1"
+  },
+  "dependencies": {
+    "axios": "^0.18.0",
+    "gif-me-duration": "^1.0.7",
+    "gify-parse": "^1.0.7",
+    "libgif": "0.0.2",
+    "videocontext": "^0.53.0"
+  }
+}
