@@ -21,22 +21,22 @@ const getDuration = (url) => {
 // const nextFrameBtn = document.getElementById(`nextFrame`);
 // const prevFrameBtn = document.getElementById(`prevFrame`);
 
-// let startLoad;
-
 class GIFPlayer {
-    constructor(src, { onLoad = () => {}, loop = true }) {
+    constructor(src, { loop = true }) {
+        this.src = src;
+        this.loop = loop;
+        this._createImageElement();
+        this._gif = new SuperGif({ gif: this._imageElement, auto_play: false });
+    }
+
+    _createImageElement() {
         const image = document.createElement(`img`);
+
+        // libgif requires the img to have a parent element
         const wrapper = document.createElement(`div`);
         wrapper.appendChild(image);
 
-        this._src = src;
-        this.loop = loop;
-        this._loadCallback = onLoad;
-
-        this._gif = new SuperGif({ gif: image, auto_play: false });
-		this._onLoad = this._onLoad.bind(this);
-		startLoad = performance.now();
-        this.load(src);
+        this._imageElement = image;
     }
 
     play() {
@@ -57,6 +57,18 @@ class GIFPlayer {
         this._gif.move_to(i);
     }
 
+    load() {
+        return new Promise(res => {
+            Promise.all([
+                getDuration(this.src),   
+                new Promise(res => this._gif.load_url(this.src, res))
+            ]).then(([duration]) => {
+                this.duration = duration / 1000;
+                res(this);
+            });
+        });
+    }
+
     get frameDuration() {
         return 1 / this.frameRate;
     }
@@ -73,24 +85,12 @@ class GIFPlayer {
         return this.length / this.duration;
     }
 
-    load(src) {
-        Promise.all([
-            getDuration(src),   
-            new Promise((res, rej) => this._gif.load_url(src, res))
-        ]).then(([duration]) => {
-            this.duration = duration / 1000;
-            this._onLoad();
-        });
+    get canvas() {
+        return this._gif.get_canvas();
     }
 
     get loaded() {
         return !this._gif.get_loading() && this.duration;
-    }
-
-    _onLoad() {
-        const canvas = this._gif.get_canvas();
-        this._canvas = canvas;
-        this._loadCallback(this);
     }
 }
 
@@ -104,14 +104,13 @@ class GIFNode extends VideoContext.NODES.CanvasNode {
         this._preloadTime = preloadTime;
         this._seek = this._seek.bind(this);
         this._update = this._update.bind(this);
-        this._gif = new GIFPlayer(src, {
-			onLoad: gif => this._element = gif._canvas,
-			loop: true
-        });
+        this._gif = new GIFPlayer(src, { loop: true });
+        
+        this._gif.load().then(gif => this._element = gif.canvas );
     }
 
     _seek(time) {
-        if(!this._gif.loaded) return;
+        if(!this._gif.loaded) ;
         this._gif.seek(time);
         super._seek(time);
     }
