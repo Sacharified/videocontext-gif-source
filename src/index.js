@@ -1,5 +1,4 @@
 import SuperGif from "libgif";
-import gif from "./assets/giphy.gif";
 import VideoContext from "videocontext";
 import gifyParse from "gify-parse";
 import axios from "axios";
@@ -14,14 +13,7 @@ const getDuration = (url) => {
 	});
   };
 
-// const container = document.getElementById(`container`);
-// const progressEl = document.getElementById(`progress`);
-// const playBtn = document.getElementById(`play`);
-// const pauseBtn = document.getElementById(`pause`);
-// const nextFrameBtn = document.getElementById(`nextFrame`);
-// const prevFrameBtn = document.getElementById(`prevFrame`);
-
-class GIFPlayer {
+export class GIFPlayer {
     constructor(src, { loop = true }) {
         this.src = src;
         this.loop = loop;
@@ -126,16 +118,4 @@ class GIFNode extends VideoContext.NODES.CanvasNode {
 	}
 }
 
-const vcCanvas = document.getElementById(`player`);
-const vc = new VideoContext(vcCanvas);
-
-const node = vc.customSourceNode(GIFNode, `https://media.giphy.com/media/KHWXGQRjbKrvUIjN2r/giphy.gif`);
-const node2 = vc.customSourceNode(GIFNode, `https://media.giphy.com/media/TrFTekH49d8yY/giphy.gif`);
-
-node.startAt(0);
-node.stopAt(60);
-node2.startAt(0);
-node2.stopAt(60);
-node.connect(vc.destination);
-node2.connect(vc.destination);
-vc.play();
+export default GIFNode;
