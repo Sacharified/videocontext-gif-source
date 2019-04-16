@@ -13,105 +13,106 @@ const getDuration = (url) => {
 	});
   };
 
+
 export class GIFPlayer {
-    constructor(src, { loop = true }) {
-        this.src = src;
-        this.loop = loop;
-        this._createImageElement();
-        this._gif = new SuperGif({ gif: this._imageElement, auto_play: false });
-    }
+	constructor(src, { loop = true }) {
+		this.src = src;
+		this.loop = loop;
+		this._createImageElement();
+		this._gif = new SuperGif({ gif: this._imageElement, auto_play: false });
+	}
 
-    _createImageElement() {
-        const image = document.createElement(`img`);
+	_createImageElement() {
+		const image = document.createElement(`img`);
 
-        // libgif requires the img to have a parent element
-        const wrapper = document.createElement(`div`);
-        wrapper.appendChild(image);
+		// libgif requires the img to have a parent element
+		const wrapper = document.createElement(`div`);
+		wrapper.appendChild(image);
 
-        this._imageElement = image;
-    }
+		this._imageElement = image;
+	}
 
-    play() {
-        this._gif.play();
-    }
-    
-    pause() {
-        this._gif.pause();
-    }
+	play() {
+		this._gif.play();
+	}
+	
+	pause() {
+		this._gif.pause();
+	}
 
-    seek(time) {
+	seek(time) {
 		const absoluteFrame = time * this.frameRate;
-        const targetFrame = this.loop ? absoluteFrame % this.length : absoluteFrame;
-        this.seekToFrame(Math.floor(targetFrame));
-    }
+		const targetFrame = this.loop ? absoluteFrame % this.length : absoluteFrame;
+		this.seekToFrame(Math.floor(targetFrame));
+	}
 
-    seekToFrame(i) {
-        this._gif.move_to(i);
-    }
+	seekToFrame(i) {
+		this._gif.move_to(i);
+	}
 
-    load() {
-        return new Promise(res => {
-            Promise.all([
-                getDuration(this.src),   
-                new Promise(res => this._gif.load_url(this.src, res))
-            ]).then(([duration]) => {
-                this.duration = duration / 1000;
-                res(this);
-            });
-        });
-    }
+	load() {
+		return new Promise(res => {
+			Promise.all([
+				getDuration(this.src),   
+				new Promise(res => this._gif.load_url(this.src, res))
+			]).then(([duration]) => {
+				this.duration = duration / 1000;
+				res(this);
+			});
+		});
+	}
 
-    get frameDuration() {
-        return 1 / this.frameRate;
-    }
-    
-    get currentFrame() {
-        return this._gif.get_current_frame();
-    }
+	get frameDuration() {
+		return 1 / this.frameRate;
+	}
+	
+	get currentFrame() {
+		return this._gif.get_current_frame();
+	}
 
-    get length() {
-        return this._gif.get_length();
-    }
+	get length() {
+		return this._gif.get_length();
+	}
 
-    get frameRate() {
-        return this.length / this.duration;
-    }
+	get frameRate() {
+		return this.length / this.duration;
+	}
 
-    get canvas() {
-        return this._gif.get_canvas();
-    }
+	get canvas() {
+		return this._gif.get_canvas();
+	}
 
-    get loaded() {
-        return !this._gif.get_loading() && this.duration;
-    }
+	get loaded() {
+		return !this._gif.get_loading() && this.duration;
+	}
 }
 
 
 class GIFNode extends VideoContext.NODES.CanvasNode {
-    constructor(src, gl, renderGraph, currentTime, preloadTime = 4) {
-        const placeholderel = document.createElement(`canvas`);
+	constructor(src, gl, renderGraph, currentTime, preloadTime = 4) {
+		const placeholderel = document.createElement(`canvas`);
 		super(placeholderel, gl, renderGraph, currentTime);
 
-        this._displayName = `GIF`;
-        this._preloadTime = preloadTime;
-        this._seek = this._seek.bind(this);
-        this._update = this._update.bind(this);
-        this._gif = new GIFPlayer(src, { loop: true });
-        
-        this._gif.load().then(gif => this._element = gif.canvas );
-    }
+		this._displayName = `GIF`;
+		this._preloadTime = preloadTime;
+		this._seek = this._seek.bind(this);
+		this._update = this._update.bind(this);
+		this._gif = new GIFPlayer(src, { loop: true });
+		
+		this._gif.load().then(gif => this._element = gif.canvas );
+	}
 
-    _seek(time) {
-        if(!this._gif.loaded) ;
-        this._gif.seek(time);
-        super._seek(time);
-    }
-    
-    _update(time) {
-        if(!this._gif.loaded) return;
-        this._gif.seek(time);
-        super._update(time);
-    }
+	_seek(time) {
+		if(!this._gif.loaded) ;
+		this._gif.seek(time);
+		super._seek(time);
+	}
+	
+	_update(time) {
+		if(!this._gif.loaded) return;
+		this._gif.seek(time);
+		super._update(time);
+	}
 
 	_isReady() {
 		return this._gif.loaded;
