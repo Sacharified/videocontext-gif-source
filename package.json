@@ -1,6 +1,6 @@
 {
   "name": "vc-gif",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Add a GIF source to VideoContext",
   "main": "index.js",
   "scripts": {
@@ -9,8 +9,8 @@
     "build": "parcel build ./src/index.js --out-dir ./dist"
   },
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/npm/cli.git"
+    "type": "git",
+    "url": "https://github.com/npm/cli.git"
   },
   "author": "Sacha Guddoy",
   "license": "ISC",
