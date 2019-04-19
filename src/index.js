@@ -1,21 +1,16 @@
-import gifyParse from "gify-parse";
-import SuperGif from "libgif";
 import VideoContext from "videocontext";
-import axios from "axios";
+import { Decoder } from "fastgif/fastgif.js";
 
-/**
- * @summary - Get the duration of a GIF from a URL
- * @param {String} url 
- */
-const getDuration = (url) => {
+const decode = url => {
 	return new Promise((res, rej) => {
-		axios(url, { responseType: 'arraybuffer' })
-			.then(({ data: b64 }) => {
-				const pictureDatainBinary = Buffer.from(b64, 'base64');
-				res(gifyParse.getInfo(pictureDatainBinary).duration);
-			});
+		const decoder = new Decoder();
+
+		window.fetch(url)
+			.then(response => response.arrayBuffer())
+			.then(buffer => decoder.decode(buffer))
+			.then(res);
 	});
-};
+}
 
 /**
  * @class
@@ -28,25 +23,92 @@ export class GIFPlayer {
 	 * @param {Object} options
 	 * @param {Boolean[true]} options.loop - Whether the gif should loop or play once and hold on end
 	 */
-	constructor(src, { loop = true }) {
+	constructor(src, { loop = true, canvas }) {
 		this.src = src;
 		this.loop = loop;
-		this._createImageElement();
-		this._gif = new SuperGif({ gif: this._imageElement, auto_play: false });
+		this.currentFrameIndex = 0;
+		this.loaded = false;
+
+		if (!canvas) {
+			canvas = this.createElement();
+		}
+		this.element = canvas;
+		this.ctx = this.element.getContext(`2d`);
+		this.onDecodeComplete = this.onDecodeComplete.bind(this);
+		this.load();
+	}
+	
+	load() {
+		return new Promise((res, rej) => {
+			decode(this.src)
+				.then(data => {
+					this.onDecodeComplete(data);
+					res(this);
+				})
+				.catch(rej);
+		});
+	}
+
+	createElement() {
+		const canvas = document.createElement(`canvas`);
+		return canvas;
 	}
 
 	/**
-	 * @method
-	 * @summary - Create the necessary img element for libgif
+	 * 
+	 * @param {Array<Object>} data 
+	 * @param {Number} data.delay
+	 * @param {Array<ImageData>} data.imageData
 	 */
-	_createImageElement() {
-		const image = document.createElement(`img`);
+	onDecodeComplete(data = []) {
+		this.data = data;
+		const [firstItem] = data;
+		this.width = firstItem.imageData.width;
+		this.height = firstItem.imageData.height;
+		this.render();
+		this.frameDelay = firstItem.delay;
+		this.loaded = true;
 
-		// libgif requires the img to have a parent element
-		const wrapper = document.createElement(`div`);
-		wrapper.appendChild(image);
+		console.log(this.data.reduce((memo, frame) => memo + frame.imageData.data.reduce((memo, val) => memo + val, 0), 0))
+	}
 
-		this._imageElement = image;
+	render(index) {
+		if (!index) {
+			index = this.currentFrameIndex;
+		}
+		const frame = this.getFrame(index);
+		console.log(frame.imageData.data.reduce((memo, val) => memo + val, 0));
+
+		const draw = () => {
+			this.ctx.putImageData(frame.imageData, 0, 0);
+			this.currentFrameIndex = index;
+		}
+
+		requestAnimationFrame(draw);
+	}
+
+	get currentFrame() {
+		return this.getFrame(this.currentFrameIndex);
+	}
+
+	set width(width = 0) {
+		this.element.width = width;
+	}
+
+	set height(height = 0) {
+		this.element.height = height;
+	}
+
+	get width() {
+		return this.element.width;
+	}
+
+	get height() {
+		return this.element.height;
+	}
+
+	getFrame(index = 0) {
+		return this.data[index];
 	}
 
 	/**
@@ -54,7 +116,15 @@ export class GIFPlayer {
 	 * @summary - Play the gif on the canvas
 	 */
 	play() {
-		this._gif.play();
+		let prevTime = 0;
+		let now = performance.now();
+		let delta = now - prevTime;
+		if (delta > this.currentFrame.delay) {
+			this.render(this.currentFrameIndex + 1);
+		}
+		this.paused = false;
+		
+		prevTime = now;
 	}
 	
 	/**
@@ -66,14 +136,30 @@ export class GIFPlayer {
 	}
 
 	/**
+	 * 
+	 * @param {Number} time - SECONDS
+	 */
+	getFrameAtTime(time) {
+		let tracker = 0;
+		const relativeTime = this.loop && time > this.duration ? time % this.duration : time;
+		const timems = relativeTime * 1000;
+		const index = this.data.findIndex(({ delay }) => {
+			tracker += delay;
+			return tracker >= timems;
+		});
+
+		return { frame: this.data[index], index };
+	}
+
+	/**
 	 * @method
 	 * @summary - Seek to a given point in time in the gif 
 	 * @param {Number} time - Time to seek to in SECONDS. If the time is greater than the length of the GIF, it will loop back around
 	 */
 	seek(time) {
-		const absoluteFrame = time * this.frameRate;
-		const targetFrame = this.loop ? absoluteFrame % this.length : absoluteFrame;
-		this.seekToFrame(Math.floor(targetFrame));
+		const { index } = this.getFrameAtTime(time);
+		// console.log(index);
+		this.seekToFrame(index);
 	}
 
 	/**
@@ -83,25 +169,7 @@ export class GIFPlayer {
 	 */
 
 	seekToFrame(index) {
-		this._gif.move_to(index);
-	}
-
-	/**
-	 * @method
-	 * @summary - Parse the GIF to get the data we need for playback
-	 * 
-	 * @returns {Promise<GIFPlayer>}
-	 */
-	load() {
-		return new Promise(res => {
-			Promise.all([
-				getDuration(this.src),   
-				new Promise(res => this._gif.load_url(this.src, res))
-			]).then(([duration]) => {
-				this.duration = duration / 1000;
-				res(this);
-			});
-		});
+		this.render(index);
 	}
 
 	/**
@@ -112,21 +180,17 @@ export class GIFPlayer {
 	get frameDuration() {
 		return 1 / this.frameRate;
 	}
-	
-	/**
-	 * @summary - The index of the currently displayed frame
-	 * @returns {Number}
-	 */
-	get currentFrame() {
-		return this._gif.get_current_frame();
-	}
 
+	get frameRate() {
+		return this.data.length / (this.frameDelay / 100);
+	}
+	
 	/**
 	 * @summary - The total number of frames in the gif file
 	 * @returns {Number}
 	 */
 	get length() {
-		return this._gif.get_length();
+		return this.data.length;
 	}
 
 	/**
@@ -137,20 +201,10 @@ export class GIFPlayer {
 		return this.length / this.duration;
 	}
 
-	/**
-	 * @summary - The canvas element that the gif is drawn on to
-	 * @returns {HTMLCanvasElement}
-	 */
-	get canvas() {
-		return this._gif.get_canvas();
-	}
-
-	/**
-	 * @summary - Whether the gif has been loaded and is ready for playback
-	 * @returns {Boolean}
-	 */
-	get loaded() {
-		return !this._gif.get_loading() && this.duration;
+	get duration() {
+		return this.data.reduce((memo, { delay }) => {
+			return memo + delay / 1000;
+		}, 0);
 	}
 }
 
@@ -175,7 +229,7 @@ class GIFNode extends VideoContext.NODES.CanvasNode {
 		this._update = this._update.bind(this);
 		this._gif = new GIFPlayer(src, { loop: true });
 		
-		this._gif.load().then(gif => this._element = gif.canvas );
+		this._gif.load().then(gif => this._element = gif.element );
 	}
 
 	_seek(time) {

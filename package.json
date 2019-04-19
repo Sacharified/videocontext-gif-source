@@ -3,7 +3,9 @@
   "version": "1.0.2",
   "description": "Add a GIF source to VideoContext",
   "main": "dist/index.js",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "parcel src/index.html",
@@ -20,6 +22,7 @@
   },
   "dependencies": {
     "axios": "^0.18.0",
+    "fastgif": "^0.1.1",
     "gif-me-duration": "^1.0.7",
     "gify-parse": "^1.0.7",
     "libgif": "0.0.2",
