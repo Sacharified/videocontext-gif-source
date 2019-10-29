@@ -5,7 +5,7 @@ Adds GIF playback support for the BBC's [VideoContext](https://github.com/bbc/Vi
 
 
 ### Installation:
-`npm i vc-gif --save-dev`
+`npm i vc-gif`
 
 ### Example usage:
 ```
