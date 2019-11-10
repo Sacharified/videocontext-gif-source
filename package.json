@@ -1,6 +1,6 @@
 {
   "name": "vc-gif",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Add a GIF source to VideoContext",
   "main": "dist/index.js",
   "files": [
