@@ -1,21 +1,5 @@
-import gifyParse from "gify-parse";
-import SuperGif from "libgif";
+import SuperGif from "libgif-extended";
 import VideoContext from "videocontext";
-import axios from "axios";
-
-/**
- * @summary - Get the duration of a GIF from a URL
- * @param {String} url 
- */
-const getDuration = (url) => {
-	return new Promise((res, rej) => {
-		axios(url, { responseType: 'arraybuffer' })
-			.then(({ data: b64 }) => {
-				const pictureDatainBinary = Buffer.from(b64, 'base64');
-				res(gifyParse.getInfo(pictureDatainBinary).duration);
-			});
-	});
-};
 
 /**
  * @class
@@ -94,11 +78,8 @@ export class GIFPlayer {
 	 */
 	load() {
 		return new Promise(res => {
-			Promise.all([
-				getDuration(this.src),   
-				new Promise(res => this._gif.load_url(this.src, res))
-			]).then(([duration]) => {
-				this.duration = duration / 1000;
+			this._gif.load_url(this.src, () => {
+				this.duration = this._gif.get_duration_ms() / 1000;
 				res(this);
 			});
 		});
