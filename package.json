@@ -18,10 +18,10 @@
   "author": "Sacha Guddoy",
   "license": "ISC",
   "devDependencies": {
-    "parcel": "^1.12.4"
+    "parcel": "^1.12.4",
+    "videocontext": "^0.53.0"
   },
   "dependencies": {
-    "libgif-extended": "0.0.3",
-    "videocontext": "^0.53.0"
+    "libgif-extended": "0.0.3"
   }
 }
