@@ -19,7 +19,7 @@
   "author": "Sacha Guddoy",
   "license": "ISC",
   "devDependencies": {
-    "parcel": "^1.12.4",
+    "parcel": "^2.8.2",
     "videocontext": "^0.53.0"
   },
   "dependencies": {
